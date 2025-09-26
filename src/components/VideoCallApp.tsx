@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Video,
   VideoOff,
   Mic,
   MicOff,
-  Phone,
   PhoneOff,
   Users,
   Copy,
@@ -23,7 +22,8 @@ const VideoCallApp = () => {
   const [roomCopied, setRoomCopied] = useState(false);
   const [error, setError] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
-
+  console.log(isInRoom);
+  console.log(ws);
   // WebRTC refs
   const localVideoRef: any = useRef(null);
   const remoteVideoRef: any = useRef(null);
@@ -54,7 +54,7 @@ const VideoCallApp = () => {
   // WebSocket connection
   const connectWebSocket = useCallback(() => {
     try {
-      const websocket : any = new WebSocket("ws://localhost:3001");
+      const websocket: any = new WebSocket("ws://localhost:3001");
       wsRef.current = websocket;
 
       websocket.onopen = () => {
@@ -64,7 +64,7 @@ const VideoCallApp = () => {
         setError("");
       };
 
-      websocket.onmessage = (event : any) => {
+      websocket.onmessage = (event: any) => {
         const data = JSON.parse(event.data);
         handleWebSocketMessage(data);
       };
@@ -77,7 +77,7 @@ const VideoCallApp = () => {
         setTimeout(connectWebSocket, 3000);
       };
 
-      websocket.onerror = (error : any) => {
+      websocket.onerror = (error: any) => {
         console.error("WebSocket error:", error);
         setError("Connection failed. Retrying...");
         setConnectionStatus("error");
@@ -88,13 +88,13 @@ const VideoCallApp = () => {
     }
   }, []);
 
-  const sendMessage = useCallback((type : any, data : any) => {
+  const sendMessage = useCallback((type: any, data: any) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type, ...data }));
     }
   }, []);
 
-  const handleWebSocketMessage = useCallback((data : any) => {
+  const handleWebSocketMessage = useCallback((data: any) => {
     const { type, ...payload } = data;
 
     switch (type) {
@@ -193,7 +193,9 @@ const VideoCallApp = () => {
         wsRef.current.close();
       }
       if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track : any) => track.stop());
+        localStreamRef.current
+          .getTracks()
+          .forEach((track: any) => track.stop());
       }
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
@@ -250,7 +252,7 @@ const VideoCallApp = () => {
     };
 
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track : any) => {
+      localStreamRef.current.getTracks().forEach((track: any) => {
         pc.addTrack(track, localStreamRef.current);
       });
     }
@@ -292,7 +294,7 @@ const VideoCallApp = () => {
     pendingCandidatesRef.current = [];
   };
 
-  const createAnswer = async (offer : any) => {
+  const createAnswer = async (offer: any) => {
     try {
       // Ensure local media is ready before answering
       if (!localStreamRef.current) {
@@ -377,7 +379,7 @@ const VideoCallApp = () => {
 
   const leaveRoom = () => {
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track : any) => track.stop());
+      localStreamRef.current.getTracks().forEach((track: any) => track.stop());
     }
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
@@ -576,7 +578,7 @@ const VideoCallApp = () => {
             ) : (
               <div className="absolute bottom-4 left-4">
                 <span className="bg-black/50 text-white px-2 py-1 rounded text-sm">
-                  {connectedUsers.find((u : any) => u.name !== userName)?.name ||
+                  {connectedUsers.find((u: any) => u.name !== userName)?.name ||
                     "Remote User"}
                 </span>
               </div>
