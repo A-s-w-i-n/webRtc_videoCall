@@ -68,7 +68,7 @@ const VideoCallApp = () => {
         setError("");
       };
 
-      websocket.onmessage = (event) => {
+      websocket.onmessage = (event : any) => {
         const data = JSON.parse(event.data);
         handleWebSocketMessage(data);
       };
@@ -81,7 +81,7 @@ const VideoCallApp = () => {
         setTimeout(connectWebSocket, 3000);
       };
 
-      websocket.onerror = (error) => {
+      websocket.onerror = (error :any) => {
         console.error("WebSocket error:", error);
         setError("Connection failed. Retrying...");
         setConnectionStatus("error");
