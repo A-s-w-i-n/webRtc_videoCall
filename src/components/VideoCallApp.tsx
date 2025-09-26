@@ -24,7 +24,7 @@ const VideoCallApp = () => {
   const [connectionStatus, setConnectionStatus] = useState<any>("disconnected");
   const [isCreator, setIsCreator] = useState<any>(false);
 
-  console.log(isInRoom,ws)
+  console.log(isInRoom, ws);
   // WebRTC refs
   const localVideoRef = useRef<any>(null);
   const remoteVideoRef = useRef<any>(null);
@@ -55,7 +55,10 @@ const VideoCallApp = () => {
   // WebSocket connection
   const connectWebSocket = useCallback(() => {
     try {
-      const websocket = new WebSocket("ws://web-rtc-video-call-4585.vercel.app");
+      // const websocket = new WebSocket("ws://web-rtc-video-call-4585.vercel.app");
+      const websocket: any = new WebSocket(
+        "wss://videocallbackend-sv45.onrender.com"
+      );
       wsRef.current = websocket;
 
       websocket.onopen = () => {
