@@ -11,29 +11,30 @@ import {
 } from "lucide-react";
 
 const VideoCallApp = () => {
-  const [ws, setWs] = useState(null);
-  const [currentView, setCurrentView] = useState("home");
-  const [roomName, setRoomName] = useState("");
-  const [userName, setUserName] = useState("");
-  const [isInRoom, setIsInRoom] = useState(false);
+  const [ws, setWs] = useState<any>(null);
+  const [currentView, setCurrentView] = useState<any>("home");
+  const [roomName, setRoomName] = useState<any>("");
+  const [userName, setUserName] = useState<any>("");
+  const [isInRoom, setIsInRoom] = useState<any>(false);
   const [connectedUsers, setConnectedUsers] = useState<any>([]);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [roomCopied, setRoomCopied] = useState(false);
-  const [error, setError] = useState("");
-  const [connectionStatus, setConnectionStatus] = useState("disconnected");
-  console.log(isInRoom);
-  console.log(ws);
-  // WebRTC refs
-  const localVideoRef: any = useRef(null);
-  const remoteVideoRef: any = useRef(null);
-  const localStreamRef: any = useRef(null);
-  const peerConnectionRef: any = useRef(null);
-  const pendingCandidatesRef: any = useRef([]);
-  const wsRef: any = useRef(null);
-  const shouldCreateOfferRef: any = useRef(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState<any>(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState<any>(true);
+  const [roomCopied, setRoomCopied] = useState<any>(false);
+  const [error, setError] = useState<any>("");
+  const [connectionStatus, setConnectionStatus] = useState<any>("disconnected");
+  const [isCreator, setIsCreator] = useState<any>(false);
 
-  const safePlay = (videoEl: HTMLVideoElement | null) => {
+  console.log(isInRoom,ws)
+  // WebRTC refs
+  const localVideoRef = useRef<any>(null);
+  const remoteVideoRef = useRef<any>(null);
+  const localStreamRef = useRef<any>(null);
+  const peerConnectionRef = useRef<any>(null);
+  const pendingCandidatesRef = useRef<any>([]);
+  const wsRef = useRef<any>(null);
+  const shouldCreateOfferRef = useRef<any>(false);
+
+  const safePlay = (videoEl: any) => {
     if (!videoEl) return;
     const playPromise = videoEl.play();
     if (playPromise && typeof playPromise.then === "function") {
@@ -54,10 +55,7 @@ const VideoCallApp = () => {
   // WebSocket connection
   const connectWebSocket = useCallback(() => {
     try {
-      // const websocket: any = new WebSocket("ws://localhost:3001");
-      const websocket: any = new WebSocket(
-        "wss://videocallbackend-sv45.onrender.com"
-      );
+      const websocket = new WebSocket("ws://web-rtc-video-call-4585.vercel.app");
       wsRef.current = websocket;
 
       websocket.onopen = () => {
@@ -67,7 +65,7 @@ const VideoCallApp = () => {
         setError("");
       };
 
-      websocket.onmessage = (event: any) => {
+      websocket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         handleWebSocketMessage(data);
       };
@@ -80,7 +78,7 @@ const VideoCallApp = () => {
         setTimeout(connectWebSocket, 3000);
       };
 
-      websocket.onerror = (error: any) => {
+      websocket.onerror = (error) => {
         console.error("WebSocket error:", error);
         setError("Connection failed. Retrying...");
         setConnectionStatus("error");
@@ -97,96 +95,117 @@ const VideoCallApp = () => {
     }
   }, []);
 
-  const handleWebSocketMessage = useCallback((data: any) => {
-    const { type, ...payload } = data;
+  const handleWebSocketMessage = useCallback(
+    (data: any) => {
+      const { type, ...payload } = data;
 
-    switch (type) {
-      case "room-created":
-        setIsInRoom(true);
-        setCurrentView("room");
-        initializeMedia();
-        break;
+      switch (type) {
+        case "room-created":
+          setIsInRoom(true);
+          setCurrentView("room");
+          setIsCreator(true);
+          // initializeMedia moved to useEffect
+          break;
 
-      case "room-joined":
-        setIsInRoom(true);
-        setCurrentView("room");
-        setConnectedUsers(payload.users || []);
-        initializeMedia();
-        break;
+        case "room-joined":
+          setIsInRoom(true);
+          setCurrentView("room");
+          setIsCreator(false);
+          setConnectedUsers(payload.users || []);
+          // initializeMedia moved to useEffect
+          break;
 
-      case "user-joined":
-        setConnectedUsers(payload.users || []);
-        if (payload.users && payload.users.length === 2) {
-          if (localStreamRef.current) {
-            createOffer();
-          } else {
-            // Defer offer until media is ready
-            shouldCreateOfferRef.current = true;
+        case "user-joined":
+          setConnectedUsers(payload.users || []);
+          // When a user joins, the creator should initiate the offer
+          if (isCreator && payload.users && payload.users.length === 2) {
+            setTimeout(() => {
+              if (localStreamRef.current) {
+                createOffer();
+              } else {
+                shouldCreateOfferRef.current = true;
+              }
+            }, 1000); // Small delay to ensure both sides are ready
           }
-        }
-        break;
+          break;
 
-      case "user-left":
-        setConnectedUsers(payload.users || []);
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = null;
-        }
-        if (peerConnectionRef.current) {
-          peerConnectionRef.current.close();
-          peerConnectionRef.current = null;
-        }
-        break;
-
-      case "offer":
-        createAnswer(payload.offer);
-        break;
-
-      case "answer":
-        if (peerConnectionRef.current) {
-          peerConnectionRef.current.setRemoteDescription(payload.answer);
-          // Add any pending ICE candidates
-          for (const candidate of pendingCandidatesRef.current) {
-            peerConnectionRef.current.addIceCandidate(candidate);
+        case "user-left":
+          setConnectedUsers(payload.users || []);
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = null;
+          }
+          if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null;
           }
           pendingCandidatesRef.current = [];
-        }
-        break;
+          break;
 
-      case "ice-candidate":
-        if (
-          peerConnectionRef.current &&
-          peerConnectionRef.current.remoteDescription
-        ) {
-          peerConnectionRef.current.addIceCandidate(payload.candidate);
-        } else {
-          pendingCandidatesRef.current.push(payload.candidate);
-        }
-        break;
+        case "offer":
+          console.log("Received offer, creating answer");
+          createAnswer(payload.offer);
+          break;
 
-      case "user-video-toggle":
-        console.log(
-          `User ${payload.userId} ${
-            payload.enabled ? "enabled" : "disabled"
-          } video`
-        );
-        break;
+        case "answer":
+          console.log("Received answer");
+          if (peerConnectionRef.current) {
+            peerConnectionRef.current
+              .setRemoteDescription(payload.answer)
+              .then(() => {
+                console.log("Remote description set successfully");
+                // Add any pending ICE candidates
+                for (const candidate of pendingCandidatesRef.current) {
+                  peerConnectionRef.current.addIceCandidate(candidate);
+                }
+                pendingCandidatesRef.current = [];
+              })
+              .catch((err: any) => {
+                console.error("Error setting remote description:", err);
+              });
+          }
+          break;
 
-      case "user-audio-toggle":
-        console.log(
-          `User ${payload.userId} ${
-            payload.enabled ? "enabled" : "disabled"
-          } audio`
-        );
-        break;
+        case "ice-candidate":
+          if (
+            peerConnectionRef.current &&
+            peerConnectionRef.current.remoteDescription
+          ) {
+            peerConnectionRef.current
+              .addIceCandidate(payload.candidate)
+              .catch((err: any) => {
+                console.error("Error adding ICE candidate:", err);
+              });
+          } else {
+            pendingCandidatesRef.current.push(payload.candidate);
+          }
+          break;
 
-      case "room-error":
-        setError(payload.message);
-        break;
+        case "user-video-toggle":
+          console.log(
+            `User ${payload.userId} ${
+              payload.enabled ? "enabled" : "disabled"
+            } video`
+          );
+          break;
 
-      default:
-        console.log("Unknown message type:", type);
-    }
-  }, []);
+        case "user-audio-toggle":
+          console.log(
+            `User ${payload.userId} ${
+              payload.enabled ? "enabled" : "disabled"
+            } audio`
+          );
+          break;
+
+        case "room-error":
+          setError(payload.message);
+          break;
+
+        default:
+          console.log("Unknown message type:", type);
+      }
+    },
+    [isCreator]
+  );
 
   useEffect(() => {
     connectWebSocket();
@@ -206,8 +225,16 @@ const VideoCallApp = () => {
     };
   }, [connectWebSocket]);
 
+  // Initialize media after room view is rendered
+  useEffect(() => {
+    if (currentView === "room" && !localStreamRef.current) {
+      initializeMedia();
+    }
+  }, [currentView]);
+
   const initializeMedia = async () => {
     try {
+      console.log("Initializing media...");
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
@@ -223,7 +250,7 @@ const VideoCallApp = () => {
       // If we were waiting to create an offer, do it now
       if (shouldCreateOfferRef.current) {
         shouldCreateOfferRef.current = false;
-        createOffer();
+        setTimeout(createOffer, 500); // Small delay to ensure stream is ready
       }
     } catch (err) {
       console.error("Error accessing media devices:", err);
@@ -231,11 +258,24 @@ const VideoCallApp = () => {
     }
   };
 
+  const addLocalTracks = (pc: any) => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track: any) => {
+        console.log("Adding track to peer connection:", track.kind);
+        pc.addTrack(track, localStreamRef.current);
+      });
+    } else {
+      console.warn("No local stream available to add tracks");
+    }
+  };
+
   const createPeerConnection = () => {
+    console.log("Creating peer connection...");
     const pc = new RTCPeerConnection(iceServers);
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log("Sending ICE candidate");
         sendMessage("ice-candidate", {
           candidate: event.candidate,
           roomName,
@@ -244,36 +284,49 @@ const VideoCallApp = () => {
     };
 
     pc.ontrack = (event) => {
-      if (remoteVideoRef.current) {
+      console.log("Received remote stream", event.streams);
+      if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
-        // Mute remote to satisfy autoplay, user can unmute if desired
-        if (typeof remoteVideoRef.current.muted === "boolean") {
-          remoteVideoRef.current.muted = true;
-        }
+        remoteVideoRef.current.muted = false;
         safePlay(remoteVideoRef.current);
       }
     };
 
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track: any) => {
-        pc.addTrack(track, localStreamRef.current);
-      });
-    }
+    pc.oniceconnectionstatechange = () => {
+      console.log("ICE connection state:", pc.iceConnectionState);
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log("Connection state:", pc.connectionState);
+    };
 
     return pc;
   };
 
   const createOffer = async () => {
     try {
+      console.log("Creating offer...");
+
       // Ensure local media is ready
       if (!localStreamRef.current) {
         await initializeMedia();
-        if (!localStreamRef.current) return;
+        if (!localStreamRef.current) {
+          console.error("No local stream available");
+          return;
+        }
+      }
+
+      // Close existing peer connection if any
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
       }
 
       peerConnectionRef.current = createPeerConnection();
+      addLocalTracks(peerConnectionRef.current);
       const offer = await peerConnectionRef.current.createOffer();
+
       await peerConnectionRef.current.setLocalDescription(offer);
+      console.log("Sending offer");
 
       sendMessage("offer", {
         offer,
@@ -285,32 +338,43 @@ const VideoCallApp = () => {
     }
   };
 
-  const drainPendingIceCandidates = () => {
-    if (!peerConnectionRef.current) return;
-    for (const candidate of pendingCandidatesRef.current) {
-      try {
-        peerConnectionRef.current.addIceCandidate(candidate);
-      } catch (e) {
-        console.warn("Failed adding buffered ICE candidate", e);
-      }
-    }
-    pendingCandidatesRef.current = [];
-  };
-
   const createAnswer = async (offer: any) => {
     try {
+      console.log("Creating answer...");
+
       // Ensure local media is ready before answering
       if (!localStreamRef.current) {
         await initializeMedia();
-        if (!localStreamRef.current) return;
+        if (!localStreamRef.current) {
+          console.error("No local stream available");
+          return;
+        }
+      }
+
+      // Close existing peer connection if any
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
       }
 
       peerConnectionRef.current = createPeerConnection();
       await peerConnectionRef.current.setRemoteDescription(offer);
-      // Now that remoteDescription is set, flush any buffered ICE
-      drainPendingIceCandidates();
+
+      // Process any buffered ICE candidates
+      for (const candidate of pendingCandidatesRef.current) {
+        try {
+          await peerConnectionRef.current.addIceCandidate(candidate);
+        } catch (e: any) {
+          console.warn("Failed adding buffered ICE candidate", e);
+        }
+      }
+      pendingCandidatesRef.current = [];
+
+      // Add local tracks AFTER setting remote description
+      addLocalTracks(peerConnectionRef.current);
+
       const answer = await peerConnectionRef.current.createAnswer();
       await peerConnectionRef.current.setLocalDescription(answer);
+      console.log("Sending answer");
 
       sendMessage("answer", {
         answer,
@@ -388,6 +452,12 @@ const VideoCallApp = () => {
       peerConnectionRef.current.close();
     }
 
+    // Reset refs
+    localStreamRef.current = null;
+    peerConnectionRef.current = null;
+    pendingCandidatesRef.current = [];
+    shouldCreateOfferRef.current = false;
+
     // Reconnect WebSocket
     if (wsRef.current) {
       wsRef.current.close();
@@ -401,6 +471,7 @@ const VideoCallApp = () => {
     setUserName("");
     setIsVideoEnabled(true);
     setIsAudioEnabled(true);
+    setIsCreator(false);
   };
 
   const copyRoomName = () => {
@@ -538,6 +609,13 @@ const VideoCallApp = () => {
         </div>
       </div>
 
+      {/* Error display in room */}
+      {error && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 m-4">
+          <p className="text-red-200 text-sm">{error}</p>
+        </div>
+      )}
+
       {/* Video Container */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-6xl">
@@ -568,7 +646,6 @@ const VideoCallApp = () => {
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              muted
               className="w-full h-full object-cover"
             />
             {connectedUsers.length < 2 ? (
