@@ -254,7 +254,7 @@ const VideoCallApp = () => {
           if (
             isCreatorRef.current &&
             payload.users &&
-            payload.users.length === 2
+            payload.users.length === 4
           ) {
             console.log("Room full, creator will create offer");
             setTimeout(() => {
@@ -357,10 +357,10 @@ const VideoCallApp = () => {
 
   const connectWebSocket = useCallback(() => {
     try {
-      // const websocket : any = new WebSocket("ws://localhost:3001");
-      const websocket: any = new WebSocket(
-        "wss://videocallbackend-sv45.onrender.com"
-      );
+      const websocket : any = new WebSocket("ws://localhost:3001");
+      // const websocket: any = new WebSocket(
+      //   "wss://videocallbackend-sv45.onrender.com"
+      // );
       wsRef.current = websocket;
 
       websocket.onopen = () => {
