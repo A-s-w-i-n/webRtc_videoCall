@@ -357,10 +357,10 @@ const VideoCallApp = () => {
 
   const connectWebSocket = useCallback(() => {
     try {
-      const websocket : any = new WebSocket("ws://localhost:3001");
-      // const websocket: any = new WebSocket(
-      //   "wss://videocallbackend-sv45.onrender.com"
-      // );
+      // const websocket : any = new WebSocket("ws://localhost:3001");
+      const websocket: any = new WebSocket(
+        "wss://videocallbackend-sv45.onrender.com"
+      );
       wsRef.current = websocket;
 
       websocket.onopen = () => {
