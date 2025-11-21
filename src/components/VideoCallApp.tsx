@@ -254,7 +254,7 @@ const VideoCallApp = () => {
           if (
             isCreatorRef.current &&
             payload.users &&
-            payload.users.length === 4
+            payload.users.length >= 2
           ) {
             console.log("Room full, creator will create offer");
             setTimeout(() => {
