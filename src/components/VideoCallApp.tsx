@@ -59,7 +59,7 @@ const VideoCallApp = () => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type, ...data }));
       console.log("Sent message:", type, data);
-    } else {
+    } else {  
       console.warn("WebSocket not ready, cannot send:", type);
     }
   }, []);
@@ -121,9 +121,9 @@ const VideoCallApp = () => {
     return pc;
   }, [sendMessage]);
 
-  const addLocalTracks = useCallback((pc : any) => {
+  const addLocalTracks = useCallback((pc: any) => {
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track : any) => {
+      localStreamRef.current.getTracks().forEach((track: any) => {
         console.log("Adding local track to peer connection:", track.kind);
         pc.addTrack(track, localStreamRef.current);
       });
@@ -168,7 +168,7 @@ const VideoCallApp = () => {
   }, [createPeerConnection, addLocalTracks, sendMessage]);
 
   const createAnswer = useCallback(
-    async (offer  : any) => {
+    async (offer: any) => {
       try {
         console.log("Creating answer...");
 
@@ -226,7 +226,7 @@ const VideoCallApp = () => {
   );
 
   const handleWebSocketMessage = useCallback(
-    (data : any) => {
+    (data: any) => {
       const { type, ...payload } = data;
       console.log("Received message:", type, payload);
 
@@ -305,7 +305,7 @@ const VideoCallApp = () => {
                 }
                 pendingCandidatesRef.current = [];
               })
-              .catch((err : any) => {
+              .catch((err: any) => {
                 console.error("Error setting remote description:", err);
               });
           }
@@ -319,7 +319,7 @@ const VideoCallApp = () => {
           ) {
             peerConnectionRef.current
               .addIceCandidate(new RTCIceCandidate(payload.candidate))
-              .catch((err : any) => {
+              .catch((err: any) => {
                 console.error("Error adding ICE candidate:", err);
               });
           } else {
@@ -370,12 +370,12 @@ const VideoCallApp = () => {
         setError("");
       };
 
-      websocket.onmessage = (event : any) => {
+      websocket.onmessage = (event: any) => {
         const data = JSON.parse(event.data);
         handleWebSocketMessage(data);
       };
 
-      websocket.onclose = (event : any) => {
+      websocket.onclose = (event: any) => {
         console.log("WebSocket disconnected", {
           code: event.code,
           reason: event.reason,
@@ -385,7 +385,7 @@ const VideoCallApp = () => {
         setTimeout(connectWebSocket, 3000);
       };
 
-      websocket.onerror = (error : any) => {
+      websocket.onerror = (error: any) => {
         console.error("WebSocket error:", error);
         setError("Connection failed. Retrying...");
         setConnectionStatus("error");
@@ -404,7 +404,9 @@ const VideoCallApp = () => {
         wsRef.current.close();
       }
       if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track : any) => track.stop());
+        localStreamRef.current
+          .getTracks()
+          .forEach((track: any) => track.stop());
       }
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
@@ -515,7 +517,7 @@ const VideoCallApp = () => {
 
   const leaveRoom = () => {
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track : any) => track.stop());
+      localStreamRef.current.getTracks().forEach((track: any) => track.stop());
     }
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
@@ -722,7 +724,7 @@ const VideoCallApp = () => {
             ) : (
               <div className="absolute bottom-4 left-4">
                 <span className="bg-black/50 text-white px-2 py-1 rounded text-sm">
-                  {connectedUsers.find((u : any) => u.name !== userName)?.name ||
+                  {connectedUsers.find((u: any) => u.name !== userName)?.name ||
                     "Remote User"}
                 </span>
               </div>
